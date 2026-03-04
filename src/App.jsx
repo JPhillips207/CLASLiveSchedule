@@ -285,109 +285,104 @@ export default function App() {
           </div>
         )}
 
-        {/* Schedule List */}
-        <div className="space-y-4">
-          {processedSessions.map(session => {
-            const isActive = now >= session.start && now < session.end;
-            const isExpanded = expandedSessions.has(session.id);
+{/* Schedule List */}
+<div className="space-y-4 overflow-x-auto">
+  <div className="min-w-[320px]">
+    {processedSessions.map(session => {
+      const isActive = now >= session.start && now < session.end;
+      const isExpanded = expandedSessions.has(session.id);
 
-            return (
-              <div 
-                key={session.id} 
-                className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
-                  isActive ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'
-                }`}
-              >
-                {/* Session Header */}
-                <button
-                  onClick={() => toggleSession(session.id)}
-                  className="w-full text-left p-5 flex items-start sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors focus:outline-none"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h2 className="text-lg font-bold text-slate-900">{session.name}</h2>
-                      {isActive && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                          LIVE NOW
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-600 font-medium">
-                      <span className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1.5 text-slate-400" />
-                        {formatTime(session.start)} - {formatTime(session.end)}
-                      </span>
-                      {session.location && (
-                        <span className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1.5 text-slate-400" />
-                          {session.location}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="text-slate-400 p-2">
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </div>
-                </button>
-
-                {/* Presentations List (Expanded Area) */}
-                {isExpanded && session.presentations.length > 0 && (
-                  <div className="border-t border-slate-100 bg-slate-50 p-5 pl-5 sm:pl-12">
-                    <div className="space-y-4 border-l-2 border-slate-200 pl-4">
-                      {session.presentations.map((pres) => (
-                        <div key={pres.id} className="relative">
-                          {/* Timeline dot */}
-                          <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
-                          
-                          <h3 className="font-semibold text-slate-900 leading-snug">{pres.title}</h3>
-                          
-                          {(pres.presenter || pres.tags.length > 0) && (
-                            <div className="mt-2 flex flex-wrap gap-3">
-                              {pres.presenter && (
-                                <div className="flex items-center text-sm text-slate-600">
-                                  <User className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                                  {pres.presenter}
-                                </div>
-                              )}
-                              
-                              {pres.tags.length > 0 && (
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <Tag className="w-3.5 h-3.5 text-slate-400" />
-                                  {pres.tags.map((tag, idx) => (
-                                    <span key={idx} className="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-medium">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Empty Search Result Fallback */}
-                {isExpanded && session.presentations.length === 0 && (
-                  <div className="border-t border-slate-100 bg-slate-50 p-5 text-sm text-slate-500 italic text-center">
-                    No presentations match your search criteria.
-                  </div>
+      return (
+        <div
+          key={session.id}
+          className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
+            isActive ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'
+          }`}
+        >
+          {/* Session Header */}
+          <button
+            onClick={() => toggleSession(session.id)}
+            className="w-full text-left p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50 transition-colors focus:outline-none"
+          >
+            <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900">{session.name}</h2>
+                {isActive && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                    LIVE NOW
+                  </span>
                 )}
               </div>
-            );
-          })}
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-600 font-medium">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  {formatTime(session.start)} - {formatTime(session.end)}
+                </span>
+                {session.location && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4 text-slate-400" />
+                    {session.location}
+                  </span>
+                )}
+              </div>
+            </div>
 
-          {/* End of results message */}
-          {data.length > 0 && processedSessions.length === 0 && (
-            <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-slate-200 text-slate-500">
-              No upcoming sessions found matching your criteria. 
+            {/* Expand/Collapse Chevron */}
+            <div className="text-slate-400 p-2 flex-shrink-0">
+              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </div>
+          </button>
+
+          {/* Expanded Presentations */}
+          {isExpanded && session.presentations.length > 0 && (
+            <div className="border-t border-slate-100 bg-slate-50 p-4 sm:p-5 sm:pl-8 md:pl-12">
+              <div className="space-y-4 border-l-2 border-slate-200 pl-4">
+                {session.presentations.map(pres => (
+                  <div key={pres.id} className="relative">
+                    {/* Timeline dot */}
+                    <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
+
+                    <h3 className="font-semibold text-slate-900 leading-snug text-sm sm:text-base">{pres.title}</h3>
+
+                    {(pres.presenter || pres.tags.length > 0) && (
+                      <div className="mt-2 flex flex-wrap gap-2 sm:gap-3">
+                        {pres.presenter && (
+                          <div className="flex items-center text-xs sm:text-sm text-slate-600">
+                            <User className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                            {pres.presenter}
+                          </div>
+                        )}
+
+                        {pres.tags.length > 0 && (
+                          <div className="flex items-center gap-1 flex-wrap text-xs sm:text-sm">
+                            <Tag className="w-3.5 h-3.5 text-slate-400" />
+                            {pres.tags.map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-medium"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty Search Result Fallback */}
+          {isExpanded && session.presentations.length === 0 && (
+            <div className="border-t border-slate-100 bg-slate-50 p-4 text-sm text-slate-500 italic text-center">
+              No presentations match your search criteria.
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    })}
+  </div>
+</div>
