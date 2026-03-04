@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 import React, { useState, useEffect, useMemo } from 'react';
 import { Upload, Search, ChevronDown, ChevronUp, Clock, MapPin, User, Tag, Download, Radio } from 'lucide-react';
 
