@@ -288,7 +288,7 @@ export default function App() {
 {/* Schedule List */}
 <div className="space-y-4 overflow-x-auto">
   <div className="min-w-[320px]">
-    {processedSessions.map(session => {
+    {processedSessions.map((session) => {
       const isActive = now >= session.start && now < session.end;
       const isExpanded = expandedSessions.has(session.id);
 
@@ -306,7 +306,7 @@ export default function App() {
           >
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-                {/* Session Name - fluid responsive font */}
+                {/* Session Name */}
                 <h2
                   className="font-bold text-slate-900"
                   style={{ fontSize: "clamp(1rem, 2.5vw, 1.5rem)" }}
@@ -346,7 +346,7 @@ export default function App() {
           {isExpanded && session.presentations.length > 0 && (
             <div className="border-t border-slate-100 bg-slate-50 p-4 sm:p-5 sm:pl-8 md:pl-12">
               <div className="space-y-4 border-l-2 border-slate-200 pl-4">
-                {session.presentations.map(pres => (
+                {session.presentations.map((pres) => (
                   <div key={pres.id} className="relative">
                     {/* Timeline dot */}
                     <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
@@ -398,5 +398,7 @@ export default function App() {
         </div>
       );
     })}
+  </div>
+</div>
   </div>
 </div>
