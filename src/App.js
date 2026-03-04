@@ -1,23 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Upload,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  MapPin,
-  User,
-  Tag,
-  Download,
-  Radio,
-} from "lucide-react";
+import React, { useState, useEffect, useMemo } from 'react';
+import { Upload, Search, ChevronDown, ChevronUp, Clock, MapPin, User, Tag, Download, Radio } from 'lucide-react';
 
 // --- CSV Parsing Helper ---
 // Handles quotes and commas inside fields properly
 const parseCSV = (str) => {
   const rows = [];
   let currentRow = [];
-  let currentValue = "";
+  let currentValue = '';
   let insideQuotes = false;
 
   for (let i = 0; i < str.length; i++) {
@@ -31,21 +20,21 @@ const parseCSV = (str) => {
       } else {
         insideQuotes = !insideQuotes;
       }
-    } else if (char === "," && !insideQuotes) {
+    } else if (char === ',' && !insideQuotes) {
       currentRow.push(currentValue.trim());
-      currentValue = "";
-    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
-      if (char === "\r" && nextChar === "\n") i++; // Skip \r in \r\n
+      currentValue = '';
+    } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+      if (char === '\r' && nextChar === '\n') i++; // Skip \r in \r\n
       currentRow.push(currentValue.trim());
-      if (currentRow.some((val) => val !== "")) rows.push(currentRow);
+      if (currentRow.some(val => val !== '')) rows.push(currentRow);
       currentRow = [];
-      currentValue = "";
+      currentValue = '';
     } else {
       currentValue += char;
     }
   }
-
-  if (currentValue !== "" || currentRow.length > 0) {
+  
+  if (currentValue !== '' || currentRow.length > 0) {
     currentRow.push(currentValue.trim());
     rows.push(currentRow);
   }
@@ -55,10 +44,10 @@ const parseCSV = (str) => {
 // --- Main Application ---
 export default function App() {
   const [data, setData] = useState([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [now, setNow] = useState(new Date());
   const [expandedSessions, setExpandedSessions] = useState(new Set());
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   // Update current time every 10 seconds to keep live pinning accurate
   useEffect(() => {
@@ -70,47 +59,31 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
 
-    setError("");
+    setError('');
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const text = event.target.result;
         const rows = parseCSV(text);
-
-        if (rows.length < 2)
-          throw new Error("CSV appears to be empty or missing headers.");
-
+        
+        if (rows.length < 2) throw new Error("CSV appears to be empty or missing headers.");
+        
         // Find column indices based on headers
-        const headers = rows[0].map((h) =>
-          h.toLowerCase().replace(/[^a-z0-origin]/g, "")
-        );
+        // FIXED: The regex below had a typo ([^a-z0-origin]) which causes a SyntaxError build failure
+        const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
         const colIdx = {
-          sessionName: headers.findIndex((h) => h.includes("session")),
-          start: headers.findIndex((h) => h.includes("start")),
-          end: headers.findIndex((h) => h.includes("end")),
-          location: headers.findIndex(
-            (h) => h.includes("location") || h.includes("room")
-          ),
-          title: headers.findIndex(
-            (h) => h.includes("title") || h.includes("presentation")
-          ),
-          presenter: headers.findIndex(
-            (h) => h.includes("presenter") || h.includes("speaker")
-          ),
-          tags: headers.findIndex(
-            (h) => h.includes("tag") || h.includes("subject")
-          ),
+          sessionName: headers.findIndex(h => h.includes('session')),
+          start: headers.findIndex(h => h.includes('start')),
+          end: headers.findIndex(h => h.includes('end')),
+          location: headers.findIndex(h => h.includes('location') || h.includes('room')),
+          title: headers.findIndex(h => h.includes('title') || h.includes('presentation')),
+          presenter: headers.findIndex(h => h.includes('presenter') || h.includes('speaker')),
+          tags: headers.findIndex(h => h.includes('tag') || h.includes('subject'))
         };
 
         // Ensure required columns exist
-        if (
-          colIdx.sessionName === -1 ||
-          colIdx.start === -1 ||
-          colIdx.end === -1
-        ) {
-          throw new Error(
-            "CSV must contain 'Session Name', 'Start Time', and 'End Time' columns."
-          );
+        if (colIdx.sessionName === -1 || colIdx.start === -1 || colIdx.end === -1) {
+          throw new Error("CSV must contain 'Session Name', 'Start Time', and 'End Time' columns.");
         }
 
         const sessionsMap = new Map();
@@ -123,7 +96,7 @@ export default function App() {
           const sessionName = row[colIdx.sessionName];
           const startTimeStr = row[colIdx.start];
           const endTimeStr = row[colIdx.end];
-
+          
           if (!sessionName || !startTimeStr || !endTimeStr) continue;
 
           // Standardize date parsing (assume YYYY-MM-DD HH:mm or similar valid format)
@@ -137,8 +110,8 @@ export default function App() {
               name: sessionName,
               start: start,
               end: end,
-              location: colIdx.location !== -1 ? row[colIdx.location] : "",
-              presentations: [],
+              location: colIdx.location !== -1 ? row[colIdx.location] : '',
+              presentations: []
             });
           }
 
@@ -147,20 +120,17 @@ export default function App() {
             sessionsMap.get(sessionName).presentations.push({
               id: `pres-${i}`,
               title: row[colIdx.title],
-              presenter: colIdx.presenter !== -1 ? row[colIdx.presenter] : "",
-              tags:
-                colIdx.tags !== -1
-                  ? row[colIdx.tags].split(";").map((t) => t.trim())
-                  : [],
+              presenter: colIdx.presenter !== -1 ? row[colIdx.presenter] : '',
+              tags: colIdx.tags !== -1 ? row[colIdx.tags].split(';').map(t => t.trim()) : []
             });
           }
         }
 
         const parsedSessions = Array.from(sessionsMap.values());
         setData(parsedSessions);
-
+        
         // Auto-expand all sessions initially
-        setExpandedSessions(new Set(parsedSessions.map((s) => s.id)));
+        setExpandedSessions(new Set(parsedSessions.map(s => s.id)));
       } catch (err) {
         setError(err.message || "Error parsing CSV file.");
       }
@@ -170,18 +140,18 @@ export default function App() {
 
   const downloadTemplate = () => {
     const template = `Session Name,Start Time,End Time,Location,Presentation Title,Presenter,Tags\nMorning Keynote,2026-03-04 09:00,2026-03-04 10:30,Main Hall,Opening Remarks,Jane Doe,Keynote;Welcome\nMorning Keynote,2026-03-04 09:00,2026-03-04 10:30,Main Hall,The Future of AI,Dr. Smith,Tech;AI\nWorkshop Alpha,2026-03-04 10:45,2026-03-04 12:00,Room 101,Hands-on React,Alice Jones,Web;Frontend`;
-    const blob = new Blob([template], { type: "text/csv" });
+    const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "clas_schedule_template.csv";
+    a.download = 'clas_schedule_template.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
   const toggleSession = (id) => {
-    setExpandedSessions((prev) => {
+    setExpandedSessions(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -193,91 +163,74 @@ export default function App() {
   const processedSessions = useMemo(() => {
     const query = search.toLowerCase().trim();
 
-    return (
-      data
-        .map((session) => {
-          // Filter presentations based on search
-          let filteredPresentations = session.presentations;
-          if (query) {
-            filteredPresentations = session.presentations.filter(
-              (p) =>
-                p.presenter.toLowerCase().includes(query) ||
-                p.tags.some((t) => t.toLowerCase().includes(query)) ||
-                p.title.toLowerCase().includes(query)
-            );
-          }
-          return { ...session, presentations: filteredPresentations };
-        })
-        // Keep sessions that match the search (either via presentation or session name itself)
-        .filter((session) => {
-          if (query) {
-            const sessionMatches = session.name.toLowerCase().includes(query);
-            if (!sessionMatches && session.presentations.length === 0)
-              return false;
-          }
-          return true; // Keep all if no query, or if it matched
-        })
-        // Core Logic: Hide past sessions
-        .filter((session) => now < session.end)
-        // Sort logic
-        .sort((a, b) => {
-          const aActive = now >= a.start && now < a.end;
-          const bActive = now >= b.start && now < b.end;
+    return data
+      .map(session => {
+        // Filter presentations based on search
+        let filteredPresentations = session.presentations;
+        if (query) {
+          filteredPresentations = session.presentations.filter(p => 
+            p.presenter.toLowerCase().includes(query) || 
+            p.tags.some(t => t.toLowerCase().includes(query)) ||
+            p.title.toLowerCase().includes(query)
+          );
+        }
+        return { ...session, presentations: filteredPresentations };
+      })
+      // Keep sessions that match the search (either via presentation or session name itself)
+      .filter(session => {
+        if (query) {
+          const sessionMatches = session.name.toLowerCase().includes(query);
+          if (!sessionMatches && session.presentations.length === 0) return false;
+        }
+        return true; // Keep all if no query, or if it matched
+      })
+      // Core Logic: Hide past sessions
+      .filter(session => now < session.end)
+      // Sort logic
+      .sort((a, b) => {
+        const aActive = now >= a.start && now < a.end;
+        const bActive = now >= b.start && now < b.end;
 
-          // Core Logic: Pin active sessions to the top
-          if (aActive && !bActive) return -1;
-          if (!aActive && bActive) return 1;
+        // Core Logic: Pin active sessions to the top
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
 
-          // Otherwise sort chronologically
-          return a.start.getTime() - b.start.getTime();
-        })
-    );
+        // Otherwise sort chronologically
+        return a.start.getTime() - b.start.getTime();
+      });
   }, [data, search, now]);
 
   // Format times elegantly
   const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   };
   const formatDate = (date) => {
-    return date.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
+    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
+        
         {/* Header Section */}
         <header className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                CLAS Live Schedule
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-900">CLAS Live Schedule</h1>
               <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
-                <Clock className="w-4 h-4" />
+                <Clock className="w-4 h-4" /> 
                 Live System Time: {formatDate(now)} at {formatTime(now)}
               </p>
             </div>
-
+            
             <div className="flex gap-2">
               <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors text-sm shadow-sm">
                 <Upload className="w-4 h-4 mr-2" />
                 Upload CSV
-                <input
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
+                <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
               </label>
               {data.length === 0 && (
-                <button
-                  onClick={downloadTemplate}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors text-sm shadow-sm"
-                >
+                <button onClick={downloadTemplate} className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors text-sm shadow-sm">
                   <Download className="w-4 h-4 mr-2" />
                   Template
                 </button>
@@ -309,17 +262,11 @@ export default function App() {
         {data.length === 0 && (
           <div className="text-center py-16 bg-white rounded-xl border border-slate-200 border-dashed">
             <Radio className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              No Schedule Uploaded
-            </h3>
+            <h3 className="text-lg font-medium text-slate-900 mb-2">No Schedule Uploaded</h3>
             <p className="text-slate-500 max-w-sm mx-auto mb-6">
-              Upload a CSV file containing your CLAS schedule to get started.
-              Active sessions will automatically pin to the top.
+              Upload a CSV file containing your CLAS schedule to get started. Active sessions will automatically pin to the top.
             </p>
-            <button
-              onClick={downloadTemplate}
-              className="text-indigo-600 hover:text-indigo-700 font-medium text-sm"
-            >
+            <button onClick={downloadTemplate} className="text-indigo-600 hover:text-indigo-700 font-medium text-sm">
               Download example CSV file
             </button>
           </div>
@@ -327,17 +274,15 @@ export default function App() {
 
         {/* Schedule List */}
         <div className="space-y-4">
-          {processedSessions.map((session) => {
+          {processedSessions.map(session => {
             const isActive = now >= session.start && now < session.end;
             const isExpanded = expandedSessions.has(session.id);
 
             return (
-              <div
-                key={session.id}
+              <div 
+                key={session.id} 
                 className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
-                  isActive
-                    ? "border-indigo-500 ring-1 ring-indigo-500"
-                    : "border-slate-200"
+                  isActive ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'
                 }`}
               >
                 {/* Session Header */}
@@ -347,9 +292,7 @@ export default function App() {
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
-                      <h2 className="text-lg font-bold text-slate-900">
-                        {session.name}
-                      </h2>
+                      <h2 className="text-lg font-bold text-slate-900">{session.name}</h2>
                       {isActive && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
                           <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
@@ -370,13 +313,9 @@ export default function App() {
                       )}
                     </div>
                   </div>
-
+                  
                   <div className="text-slate-400 p-2">
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5" />
-                    )}
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
                 </button>
 
@@ -388,11 +327,9 @@ export default function App() {
                         <div key={pres.id} className="relative">
                           {/* Timeline dot */}
                           <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
-
-                          <h3 className="font-semibold text-slate-900 leading-snug">
-                            {pres.title}
-                          </h3>
-
+                          
+                          <h3 className="font-semibold text-slate-900 leading-snug">{pres.title}</h3>
+                          
                           {(pres.presenter || pres.tags.length > 0) && (
                             <div className="mt-2 flex flex-wrap gap-3">
                               {pres.presenter && (
@@ -401,15 +338,12 @@ export default function App() {
                                   {pres.presenter}
                                 </div>
                               )}
-
+                              
                               {pres.tags.length > 0 && (
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <Tag className="w-3.5 h-3.5 text-slate-400" />
                                   {pres.tags.map((tag, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-medium"
-                                    >
+                                    <span key={idx} className="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-medium">
                                       {tag}
                                     </span>
                                   ))}
@@ -422,7 +356,7 @@ export default function App() {
                     </div>
                   </div>
                 )}
-
+                
                 {/* Empty Search Result Fallback */}
                 {isExpanded && session.presentations.length === 0 && (
                   <div className="border-t border-slate-100 bg-slate-50 p-5 text-sm text-slate-500 italic text-center">
@@ -436,7 +370,7 @@ export default function App() {
           {/* End of results message */}
           {data.length > 0 && processedSessions.length === 0 && (
             <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-slate-200 text-slate-500">
-              No upcoming sessions found matching your criteria.
+              No upcoming sessions found matching your criteria. 
             </div>
           )}
         </div>
