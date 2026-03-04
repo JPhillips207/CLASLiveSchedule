@@ -1,6 +1,9 @@
 {
   "name": "react",
   "version": "1.0.0",
+   "engines": {
+    "node": "20.x"
+  },
   "description": "",
   "keywords": [],
   "main": "src/index.tsx",
