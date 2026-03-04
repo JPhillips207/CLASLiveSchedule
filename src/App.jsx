@@ -2,7 +2,7 @@
 /* eslint-disable */
 import React, { useState, useEffect, useMemo } from 'react';
 
-// --- Inline SVG Icons (Replaces lucide-react to prevent React context errors) ---
+// --- Inline SVG Icons ---
 const Upload = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
 const Search = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 const ChevronDown = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
@@ -15,7 +15,6 @@ const Download = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" view
 const Radio = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>;
 
 // --- CSV Parsing Helper ---
-// Handles quotes and commas inside fields properly
 const parseCSV = (str) => {
   const rows = [];
   let currentRow = [];
@@ -29,7 +28,7 @@ const parseCSV = (str) => {
     if (char === '"') {
       if (insideQuotes && nextChar === '"') {
         currentValue += '"';
-        i++; // Skip the escaped quote
+        i++;
       } else {
         insideQuotes = !insideQuotes;
       }
@@ -37,7 +36,7 @@ const parseCSV = (str) => {
       currentRow.push(currentValue.trim());
       currentValue = '';
     } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-      if (char === '\r' && nextChar === '\n') i++; // Skip \r in \r\n
+      if (char === '\r' && nextChar === '\n') i++;
       currentRow.push(currentValue.trim());
       if (currentRow.some(val => val !== '')) rows.push(currentRow);
       currentRow = [];
@@ -54,7 +53,7 @@ const parseCSV = (str) => {
   return rows;
 };
 
-// --- Main Application ---
+// --- Main App ---
 export default function App() {
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
@@ -62,7 +61,6 @@ export default function App() {
   const [expandedSessions, setExpandedSessions] = useState(new Set());
   const [error, setError] = useState('');
 
-  // Update current time every 10 seconds to keep live pinning accurate
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 10000);
     return () => clearInterval(timer);
@@ -78,11 +76,8 @@ export default function App() {
       try {
         const text = event.target.result;
         const rows = parseCSV(text);
-        
-        if (rows.length < 2) throw new Error("CSV appears to be empty or missing headers.");
-        
-        // Find column indices based on headers
-        // FIXED: The regex below had a typo ([^a-z0-origin]) which causes a SyntaxError build failure
+        if (rows.length < 2) throw new Error("CSV appears empty.");
+
         const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
         const colIdx = {
           sessionName: headers.findIndex(h => h.includes('session')),
@@ -93,42 +88,28 @@ export default function App() {
           presenter: headers.findIndex(h => h.includes('presenter') || h.includes('speaker')),
           tags: headers.findIndex(h => h.includes('tag') || h.includes('subject'))
         };
-
-        // Ensure required columns exist
-        if (colIdx.sessionName === -1 || colIdx.start === -1 || colIdx.end === -1) {
-          throw new Error("CSV must contain 'Session Name', 'Start Time', and 'End Time' columns.");
-        }
+        if (colIdx.sessionName === -1 || colIdx.start === -1 || colIdx.end === -1) throw new Error("CSV must contain 'Session Name', 'Start Time', and 'End Time'.");
 
         const sessionsMap = new Map();
-
-        // Process data rows
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
-          if (row.length < 3) continue; // Skip empty/malformed rows
+          if (row.length < 3) continue;
 
           const sessionName = row[colIdx.sessionName];
-          const startTimeStr = row[colIdx.start];
-          const endTimeStr = row[colIdx.end];
-          
-          if (!sessionName || !startTimeStr || !endTimeStr) continue;
+          const start = new Date(row[colIdx.start]);
+          const end = new Date(row[colIdx.end]);
 
-          // Standardize date parsing (assume YYYY-MM-DD HH:mm or similar valid format)
-          const start = new Date(startTimeStr);
-          const end = new Date(endTimeStr);
-
-          // Group by session
           if (!sessionsMap.has(sessionName)) {
             sessionsMap.set(sessionName, {
-              id: sessionName + startTimeStr,
+              id: sessionName + row[colIdx.start],
               name: sessionName,
-              start: start,
-              end: end,
+              start,
+              end,
               location: colIdx.location !== -1 ? row[colIdx.location] : '',
               presentations: []
             });
           }
 
-          // Add presentation to session
           if (colIdx.title !== -1 && row[colIdx.title]) {
             sessionsMap.get(sessionName).presentations.push({
               id: `pres-${i}`,
@@ -141,8 +122,6 @@ export default function App() {
 
         const parsedSessions = Array.from(sessionsMap.values());
         setData(parsedSessions);
-        
-        // Auto-expand all sessions initially
         setExpandedSessions(new Set(parsedSessions.map(s => s.id)));
       } catch (err) {
         setError(err.message || "Error parsing CSV file.");
@@ -172,13 +151,10 @@ export default function App() {
     });
   };
 
-  // Process data: Filter, remove past, and sort
   const processedSessions = useMemo(() => {
     const query = search.toLowerCase().trim();
-
     return data
       .map(session => {
-        // Filter presentations based on search
         let filteredPresentations = session.presentations;
         if (query) {
           filteredPresentations = session.presentations.filter(p => 
@@ -189,53 +165,35 @@ export default function App() {
         }
         return { ...session, presentations: filteredPresentations };
       })
-      // Keep sessions that match the search (either via presentation or session name itself)
-      .filter(session => {
-        if (query) {
-          const sessionMatches = session.name.toLowerCase().includes(query);
-          if (!sessionMatches && session.presentations.length === 0) return false;
-        }
-        return true; // Keep all if no query, or if it matched
-      })
-      // Core Logic: Hide past sessions
+      .filter(session => query ? session.name.toLowerCase().includes(query) || session.presentations.length > 0 : true)
       .filter(session => now < session.end)
-      // Sort logic
       .sort((a, b) => {
         const aActive = now >= a.start && now < a.end;
         const bActive = now >= b.start && now < b.end;
-
-        // Core Logic: Pin active sessions to the top
         if (aActive && !bActive) return -1;
         if (!aActive && bActive) return 1;
-
-        // Otherwise sort chronologically
         return a.start.getTime() - b.start.getTime();
       });
   }, [data, search, now]);
 
-  // Format times elegantly
-  const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  };
-  const formatDate = (date) => {
-    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-  };
+  const formatTime = (date) => date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const formatDate = (date) => date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        
+
         {/* Header Section */}
         <header className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">CLAS Live Schedule</h1>
               <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
-                <Clock className="w-4 h-4" /> 
+                <Clock className="w-4 h-4" />
                 Live System Time: {formatDate(now)} at {formatTime(now)}
               </p>
             </div>
-            
+
             <div className="flex gap-2">
               <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors text-sm shadow-sm">
                 <Upload className="w-4 h-4 mr-2" />
@@ -285,120 +243,123 @@ export default function App() {
           </div>
         )}
 
-{/* Schedule List */}
-<div className="space-y-4 overflow-x-auto">
-  <div className="min-w-[320px]">
-    {processedSessions.map((session) => {
-      const isActive = now >= session.start && now < session.end;
-      const isExpanded = expandedSessions.has(session.id);
+        {/* Schedule List */}
+        <div className="space-y-4 overflow-x-auto">
+          <div className="min-w-[320px]">
+            {processedSessions.map((session) => {
+              const isActive = now >= session.start && now < session.end;
+              const isExpanded = expandedSessions.has(session.id);
 
-      return (
-        <div
-          key={session.id}
-          className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
-            isActive ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'
-          }`}
-        >
-          {/* Session Header */}
-          <button
-            onClick={() => toggleSession(session.id)}
-            className="w-full text-left p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50 transition-colors focus:outline-none"
-          >
-            <div className="flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-                {/* Session Name */}
-                <h2
-                  className="font-bold text-slate-900"
-                  style={{ fontSize: "clamp(1rem, 2.5vw, 1.5rem)" }}
+              return (
+                <div
+                  key={session.id}
+                  className={`bg-white rounded-xl shadow-sm border overflow-hidden transition-all ${
+                    isActive ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'
+                  }`}
                 >
-                  {session.name}
-                </h2>
+                  {/* Session Header */}
+                  <button
+                    onClick={() => toggleSession(session.id)}
+                    className="w-full text-left p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 hover:bg-slate-50 transition-colors focus:outline-none"
+                  >
+                    <div className="flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
+                        {/* Session Name */}
+                        <h2
+                          className="font-bold text-slate-900"
+                          style={{ fontSize: "clamp(1rem, 2.5vw, 1.5rem)" }}
+                        >
+                          {session.name}
+                        </h2>
 
-                {isActive && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                    LIVE NOW
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-600 font-medium">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4 text-slate-400" />
-                  {formatTime(session.start)} - {formatTime(session.end)}
-                </span>
-                {session.location && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-slate-400" />
-                    {session.location}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Expand/Collapse Chevron */}
-            <div className="text-slate-400 p-2 flex-shrink-0">
-              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </div>
-          </button>
-
-          {/* Expanded Presentations */}
-          {isExpanded && session.presentations.length > 0 && (
-            <div className="border-t border-slate-100 bg-slate-50 p-4 sm:p-5 sm:pl-8 md:pl-12">
-              <div className="space-y-4 border-l-2 border-slate-200 pl-4">
-                {session.presentations.map((pres) => (
-                  <div key={pres.id} className="relative">
-                    {/* Timeline dot */}
-                    <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
-
-                    {/* Presentation Title */}
-                    <h3
-                      className="font-semibold text-slate-900 leading-snug"
-                      style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)" }}
-                    >
-                      {pres.title}
-                    </h3>
-
-                    {(pres.presenter || pres.tags.length > 0) && (
-                      <div className="mt-2 flex flex-wrap gap-2 sm:gap-3">
-                        {pres.presenter && (
-                          <div className="flex items-center text-xs sm:text-sm text-slate-600">
-                            <User className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                            {pres.presenter}
-                          </div>
-                        )}
-
-                        {pres.tags.length > 0 && (
-                          <div className="flex items-center gap-1 flex-wrap text-xs sm:text-sm">
-                            <Tag className="w-3.5 h-3.5 text-slate-400" />
-                            {pres.tags.map((tag, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-medium"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                        {isActive && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                            LIVE NOW
+                          </span>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Empty Search Result Fallback */}
-          {isExpanded && session.presentations.length === 0 && (
-            <div className="border-t border-slate-100 bg-slate-50 p-4 text-sm text-slate-500 italic text-center">
-              No presentations match your search criteria.
-            </div>
-          )}
+                      <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-600 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4 text-slate-400" />
+                          {formatTime(session.start)} - {formatTime(session.end)}
+                        </span>
+                        {session.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4 text-slate-400" />
+                            {session.location}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expand/Collapse Chevron */}
+                    <div className="text-slate-400 p-2 flex-shrink-0">
+                      {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
+                  </button>
+
+                  {/* Expanded Presentations */}
+                  {isExpanded && session.presentations.length > 0 && (
+                    <div className="border-t border-slate-100 bg-slate-50 p-4 sm:p-5 sm:pl-8 md:pl-12">
+                      <div className="space-y-4 border-l-2 border-slate-200 pl-4">
+                        {session.presentations.map((pres) => (
+                          <div key={pres.id} className="relative">
+                            {/* Timeline dot */}
+                            <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
+
+                            {/* Presentation Title */}
+                            <h3
+                              className="font-semibold text-slate-900 leading-snug"
+                              style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)" }}
+                            >
+                              {pres.title}
+                            </h3>
+
+                            {(pres.presenter || pres.tags.length > 0) && (
+                              <div className="mt-2 flex flex-wrap gap-2 sm:gap-3">
+                                {pres.presenter && (
+                                  <div className="flex items-center text-xs sm:text-sm text-slate-600">
+                                    <User className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                                    {pres.presenter}
+                                  </div>
+                                )}
+
+                                {pres.tags.length > 0 && (
+                                  <div className="flex items-center gap-1 flex-wrap text-xs sm:text-sm">
+                                    <Tag className="w-3.5 h-3.5 text-slate-400" />
+                                    {pres.tags.map((tag, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-block px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs font-medium"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty Search Result Fallback */}
+                  {isExpanded && session.presentations.length === 0 && (
+                    <div className="border-t border-slate-100 bg-slate-50 p-4 text-sm text-slate-500 italic text-center">
+                      No presentations match your search criteria.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      );
-    })}
-  </div>
-</div>
-  </div>
-</div>
+
+      </div>
+    </div>
+  );
+}
