@@ -306,7 +306,14 @@ export default function App() {
           >
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">{session.name}</h2>
+                {/* Session Name - fluid responsive font */}
+                <h2
+                  className="font-bold text-slate-900"
+                  style={{ fontSize: "clamp(1rem, 2.5vw, 1.5rem)" }}
+                >
+                  {session.name}
+                </h2>
+
                 {isActive && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
@@ -314,6 +321,7 @@ export default function App() {
                   </span>
                 )}
               </div>
+
               <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-600 font-medium">
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4 text-slate-400" />
@@ -343,7 +351,13 @@ export default function App() {
                     {/* Timeline dot */}
                     <div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-slate-300 border-2 border-slate-50"></div>
 
-                    <h3 className="font-semibold text-slate-900 leading-snug text-sm sm:text-base">{pres.title}</h3>
+                    {/* Presentation Title */}
+                    <h3
+                      className="font-semibold text-slate-900 leading-snug"
+                      style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)" }}
+                    >
+                      {pres.title}
+                    </h3>
 
                     {(pres.presenter || pres.tags.length > 0) && (
                       <div className="mt-2 flex flex-wrap gap-2 sm:gap-3">
